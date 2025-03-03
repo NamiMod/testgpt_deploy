@@ -6,7 +6,7 @@ import uuid
 from openai import OpenAI
 
 # Initialize OpenAI client using environment variable for API key
-client = OpenAI(api_key="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")
+client = OpenAI(api_key="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")
 
 # Initialize Flask app
 app = Flask(__name__)
