@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TestGPT</title>
+    <!-- Font Awesome for Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      crossorigin="anonymous"
+    />
+    <!-- Highlight.js CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css"
+    />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+    <!-- Highlight.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <!-- Marked.js Library for Markdown Parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Initialize Highlight.js on page load
+        hljs.highlightAll();
+
+        // Original page load animation for the results area
+        window.onload = function () {
+          const resultsArea = document.querySelector(".results-area");
+          setTimeout(() => {
+            resultsArea.style.opacity = "1";
+            resultsArea.style.transform = "translateY(0)";
+          }, 100);
+        };
+
+        // ---------------------------
+        // DOM Element References
+        // ---------------------------
+        const uploadInput = document.getElementById("upload-input");
+        const successMessage = document.getElementById("success-message");
+        const errorMessage = document.getElementById("error-message");
+        const processingMessage = document.getElementById("processing-message");
+        const resultOutput = document.getElementById("result-output");
+        const sendButton = document.getElementById("search-button");
+        const searchInput = document.getElementById("search-input");
+
+        // ---------------------------
+        // Message Display Helpers
+        // ---------------------------
+        function displayError(message) {
+          errorMessage.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+          errorMessage.style.display = "flex";
+          processingMessage.style.display = "none";
+          successMessage.style.display = "none";
+        }
+        function displaySuccess(message) {
+          successMessage.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+          successMessage.style.display = "flex";
+          processingMessage.style.display = "none";
+          errorMessage.style.display = "none";
+        }
+        function clearMessages() {
+          errorMessage.style.display = "none";
+          successMessage.style.display = "none";
+        }
+        function showProcessing() {
+          processingMessage.style.display = "flex";
+          clearMessages();
+        }
+        function hideProcessing() {
+          processingMessage.style.display = "none";
+        }
+        function processMessage(text) {
+          return marked.parse(text.replace(/'''/g, "```"));
+        }
+        function appendMessage(role, text) {
+          const messageBubble = document.createElement("div");
+          messageBubble.classList.add("message", role === "user" ? "message-user" : "message-assistant");
+          if (role === "user") {
+            messageBubble.textContent = text;
+          } else {
+            messageBubble.innerHTML = processMessage(text);
+            messageBubble.querySelectorAll("pre code").forEach((block) => {
+              hljs.highlightElement(block);
+            });
+          }
+          resultOutput.appendChild(messageBubble);
+          resultOutput.scrollTop = resultOutput.scrollHeight;
+        }
+
+        // ---------------------------
+        // File Upload Validation
+        // ---------------------------
+        uploadInput.addEventListener("change", function () {
+          const file = this.files[0];
+          if (file) {
+            const allowedExtensions = [".yaml", ".yml", ".unity"];
+            const fileName = file.name.toLowerCase();
+            const isValid = allowedExtensions.some(ext => fileName.endsWith(ext));
+            if (!isValid) {
+              displayError("Invalid file type. Please upload a YAML or Unity file.");
+              this.value = "";
+            } else {
+              displaySuccess(`File '${file.name}' uploaded successfully.`);
+            }
+          }
+        });
+
+        // ---------------------------
+        // Popup Functionality for Left Menu
+        // ---------------------------
+        const popup = document.getElementById("popup");
+        const popupText = document.getElementById("popup-text");
+        const popupElements = document.querySelectorAll(".menu-item[data-popup]");
+
+        popupElements.forEach(function (element) {
+          element.addEventListener("click", function (e) {
+            e.preventDefault();
+            const popupType = element.getAttribute("data-popup");
+            if (popupType === "help") {
+              popupText.innerHTML = `<h2>Getting Started</h2>
+                  <p style="text-align: justify;">Welcome to TestGPT, your intelligent solution for automating test creation based on the Arium test automation framework. Whether you're a developer, QA engineer, or tester, our application simplifies the process of generating comprehensive tests tailored to your specific needs. Begin by uploading a scene file in YAML format or by linking a public repository containing your project’s YAML files. This flexibility ensures that you can seamlessly integrate your existing workflows and data sources with our platform.</p>
+                  <h2>Uploading and Linking Your Scene Files</h2>
+                  <p style="text-align: justify;">To get started, navigate to the Upload section of the application. Here, you can select and upload your YAML file. Once uploaded, our system will automatically parse the YAML files to extract detailed information about the objects within your scene. You can also link a public repository instead.</p>
+                  <h2>Describing Test Scenarios and Generating Tests</h2>
+                  <p style="text-align: justify;">After successfully uploading your scene files or linking to a public repository, you can type your test description. Here, you can describe the specific scenarios you wish to test, detailing the expected behaviors and outcomes. Our application leverages the power of ChatGPT to analyze both the extracted scene information and your described scenarios to generate robust and meaningful tests.</p>`;
+            } else if (popupType === "settings") {
+              popupText.innerHTML = `
+                  <h2 id="popup-title">Settings</h2>
+                  <p>Here you can change your preferences for TestGPT:</p>
+                  <table class="settings-table">
+                      <tr>
+                          <td>
+                              <button id="theme-toggle-button" class="popup-button" aria-label="Toggle Dark and Light Mode">
+                                  <i class="fas fa-moon"></i> Dark Mode
+                              </button>
+                          </td>
+                          <td>
+                              <button class="popup-button locked-button" aria-label="Disable Arium" disabled>
+                                  <i class="fas fa-lock"></i> Disable Arium
+                              </button>
+                          </td>
+                          <td>
+                              <button class="popup-button locked-button" aria-label="Enable Chat History" disabled>
+                                  <i class="fas fa-lock"></i> Enable Chat History
+                              </button>
+                          </td>
+                      </tr>
+                  </table>
+              `;
+              // Attach the theme toggle functionality with text update
+              const themeToggleButton = document.getElementById("theme-toggle-button");
+              themeToggleButton.addEventListener("click", function () {
+                document.body.classList.toggle("light-mode");
+                if (document.body.classList.contains("light-mode")) {
+                  themeToggleButton.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
+                } else {
+                  themeToggleButton.innerHTML = '<i class="fas fa-moon"></i> Dark Mode';
+                }
+              });
+            } else if (popupType === "about") {
+              popupText.innerHTML = `<h2>About TestGPT</h2>
+                  <p style="text-align: justify;">TestGPT has been developed as a Master's Thesis at the <a href="https://www.ucalgary.ca" target="_blank">University of Calgary</a> in 2024 at the <a href="https://seriousxr.ca" target="_blank">SEER Lab</a>. This thesis was initiated with the goal of improving testing for XR applications. To report any bugs or problems with TestGPT or for any other inquiries, please email the developer of TestGPT at <a href="mailto:seyednami.modarressi@ucalgary.ca">seyednami.modarressi@ucalgary.ca</a>.</p>`;
+            }
+            popup.style.display = "block";
+            document.body.style.overflow = "hidden";
+            trapFocus(popup);
+          });
+        });
+
+        // Close popup when clicking on the close button or outside the popup content
+        popup.addEventListener("click", function (e) {
+          if (e.target.classList.contains("close") || e.target === popup) {
+            popup.style.display = "none";
+            document.body.style.overflow = "auto";
+          }
+        });
+
+        // Function to trap focus within the popup
+        function trapFocus(element) {
+          const focusableElementsString =
+            'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), iframe, object, embed, [tabindex="0"], [contenteditable]';
+          let focusableElements = element.querySelectorAll(focusableElementsString);
+          focusableElements = Array.prototype.slice.call(focusableElements);
+          if (focusableElements.length === 0) return;
+          let firstTabStop = focusableElements[0];
+          let lastTabStop = focusableElements[focusableElements.length - 1];
+          element.addEventListener("keydown", function (e) {
+            if (e.keyCode === 9) {
+              if (e.shiftKey) {
+                if (document.activeElement === firstTabStop) {
+                  e.preventDefault();
+                  lastTabStop.focus();
+                }
+              } else {
+                if (document.activeElement === lastTabStop) {
+                  e.preventDefault();
+                  firstTabStop.focus();
+                }
+              }
+            } else if (e.keyCode === 27) {
+              element.style.display = "none";
+              document.body.style.overflow = "auto";
+            }
+          });
+          firstTabStop.focus();
+        }
+
+        // ---------------------------
+        // Handle Send Button Click
+        // ---------------------------
+        sendButton.addEventListener("click", function () {
+          const userInput = searchInput.value.trim();
+          const file = uploadInput.files[0];
+
+          if (userInput === "") {
+            displayError("Please enter a prompt.");
+            return;
+          }
+          if (userInput.length > 1000) {
+            displayError("Prompt is too long. Please limit to 1000 characters.");
+            return;
+          }
+          if (!file) {
+            displayError("Please attach a file to send your request.");
+            return;
+          }
+
+          clearMessages();
+          appendMessage("user", userInput);
+          showProcessing();
+          sendButton.disabled = true;
+
+          const formData = new FormData();
+          formData.append("prompt", userInput);
+          formData.append("file", file);
+
+          fetch("/submit", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => {
+              if (!response.ok) {
+                return response.json().then((errData) => {
+                  throw new Error(errData.error || "Server error");
+                });
+              }
+              return response.json();
+            })
+            .then((data) => {
+              if (data.error) {
+                displayError(data.error);
+              } else {
+                appendMessage("assistant", data.answer);
+              }
+            })
+            .catch((error) => {
+              displayError(error.message || "An error occurred while processing your request.");
+            })
+            .finally(() => {
+              sendButton.disabled = false;
+              hideProcessing();
+              uploadInput.value = "";
+              searchInput.value = "";
+            });
+        });
+
+        // Enable Enter key for submission
+        searchInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            sendButton.click();
+          }
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="logo">
+          <h1>TestGPT</h1>
+        </div>
+        <nav class="menu">
+          <ul>
+            <li><a href="#" class="menu-item" data-popup="help">Help</a></li>
+            <li><a href="#" class="menu-item" data-popup="settings">Settings</a></li>
+            <li><a href="#" class="menu-item" data-popup="about">About Us</a></li>
+          </ul>
+        </nav>
+        <div class="profile-card">
+          <div class="profile">
+            <img src="../static/logo.jpg" alt="Profile Picture" />
+            <p>Version 1.0</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="content">
+        <div id="results-area" class="results-area">
+          <div id="result-output" class="result-output" aria-label="Result Output"></div>
+          <div id="error-message" class="error-message" style="display: none;"></div>
+          <div id="processing-message" class="processing-message" style="display: none;">
+            Processing<span class="loader-dots"><span></span><span></span><span></span></span>
+          </div>
+          <div id="success-message" class="success-message" style="display: none;"></div>
+        </div>
+        <!-- Input Section -->
+        <div class="input-section">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Describe your test scenario..."
+            aria-label="Search Input"
+            maxlength="1000"
+          />
+          <button type="button" id="search-button">Send</button>
+          <!-- Hidden File Input -->
+          <input
+            type="file"
+            id="upload-input"
+            class="file-input"
+            aria-label="Upload File"
+            accept=".yaml,.yml,.unity"
+          />
+          <!-- Styled Label Acting as Button -->
+          <label for="upload-input" class="upload-button" aria-label="Upload File">
+            <i class="fas fa-upload"></i> Upload File
+          </label>
+        </div>
+      </main>
+    </div>
+
+    <!-- Popup Container -->
+    <div id="popup" class="popup" role="dialog" aria-modal="true">
+      <div class="popup-content">
+        <button class="close" aria-label="Close Pop-up">&times;</button>
+        <div id="popup-text"></div>
+      </div>
+    </div>
+  </body>
+</html>
