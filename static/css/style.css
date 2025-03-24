@@ -869,13 +869,13 @@ body.light-mode .results-area::-webkit-scrollbar-thumb {
 /* Code Block Styling for Dark/Light Mode */
 pre code {
   display: block;
-  white-space: pre-wrap;   /* Wrap long lines */
-  word-wrap: break-word;   /* Break long words */
+  white-space: pre;        /* No line wrapping */
   overflow-x: auto;        /* Horizontal scroll if needed */
-  max-width: 100%;         /* Don’t exceed container width */
+  max-width: 100%;
   padding: 1em;
   border-radius: 5px;
 }
+
 /* Dark Mode Code Blocks */
 body:not(.light-mode) pre code {
   background-color: #2d2d2d !important;

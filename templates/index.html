@@ -26,7 +26,6 @@
         // Initialize Highlight.js on page load
         hljs.highlightAll();
 
-        // Original page load animation for the results area
         window.onload = function () {
           const resultsArea = document.querySelector(".results-area");
           setTimeout(() => {
@@ -72,9 +71,15 @@
         function hideProcessing() {
           processingMessage.style.display = "none";
         }
+
+        // Convert triple single quotes to triple backticks for code blocks
         function processMessage(text) {
+          // CHANGED: If your model returns code blocks with triple backticks,
+          // you may not need this replacement. If you do have triple single quotes
+          // in the response, keep it. Otherwise, you can remove or adapt it.
           return marked.parse(text.replace(/'''/g, "```"));
         }
+
         function appendMessage(role, text) {
           const messageBubble = document.createElement("div");
           messageBubble.classList.add("message", role === "user" ? "message-user" : "message-assistant");
@@ -253,6 +258,7 @@
               if (data.error) {
                 displayError(data.error);
               } else {
+                // The entire code is in data.answer, which is already in triple backticks
                 appendMessage("assistant", data.answer);
               }
             })
@@ -293,7 +299,7 @@
         </nav>
         <div class="profile-card">
           <div class="profile">
-            <img src="../static/logo.jpg" alt="Profile Picture" />
+            <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Profile Picture" />
             <p>Version 1.0</p>
           </div>
         </div>

@@ -39,12 +39,11 @@ def is_test_generation_prompt(prompt):
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="o3-mini",  # Using o3-mini model
             messages=[
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": user_message},
-            ],
-            temperature=0
+            ]
         )
         answer = response.choices[0].message.content.strip().lower()
         logger.info(f"Prompt relevance check response: {answer}")
@@ -80,7 +79,8 @@ def generate_test(prompt, file_content):
         "Do NOT include any setup, installation, or general framework instructions in your final output; output only the necessary test code. "
         "As guidance, refer to the following Arium Framework Syntax:\n"
         f"{atrium_syntax}\n"
-        "Use the syntax above as a reference for generating the test code, but do not output these instructions or the syntax in the final code."
+        "Use the syntax above as a reference for generating the test code, but do not output these instructions or the syntax in the final code.\n"
+        "IMPORTANT: Always include 'using Arium;' at the top of your final code snippet."
     )
 
     user_message = (
@@ -91,15 +91,20 @@ def generate_test(prompt, file_content):
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="o3-mini",  # Using o3-mini model
             messages=[
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": user_message},
-            ],
-            temperature=0.7,
-            max_tokens=500
+            ]
         )
         assistant_reply = response.choices[0].message.content.strip()
+        
+        # Ensure "using Arium;" is present in the output
+        if "using Arium;" not in assistant_reply:
+            assistant_reply = "using Arium;\n" + assistant_reply
+        
+        # Wrap the output in a markdown code fence for proper formatting
+        assistant_reply = f"```csharp\n{assistant_reply}\n```"
         logger.info("Test generation response received.")
         return {'answer': assistant_reply}
 
