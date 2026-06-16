@@ -81,8 +81,6 @@ Only after passing this review is the final, validated code presented to the use
 *  **Degree:** Master of Science in Computer Science 
 *  **Date:** August 2025 
 
-*(You can link to the official thesis PDF here once it's available in the university's digital archive.)*
-
 ## 🚀 Future Work
 
 This research opened several exciting avenues for future work, including:
